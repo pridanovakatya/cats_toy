@@ -41,7 +41,7 @@ void loop() {
 //    digitalWrite(led,LOW);
 //    digitalWrite(led2,HIGH);
 //  }
-  if (distance >= 200 || distance <= 0){
+  if ( distance <= 0){
     Serial.println("Out of range");
   }
   else {
