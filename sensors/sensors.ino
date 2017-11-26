@@ -42,7 +42,6 @@ void loop() {
                   Serial.print(distance);
                   Serial.write(";");
                 }
-                delay(500);
           }
       } else {
          buf[tail++] = val;
