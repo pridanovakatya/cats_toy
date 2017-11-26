@@ -35,12 +35,12 @@ void loop() {
                 duration = pulseIn(echoPin, HIGH);
                 distance = (duration/2) / 29.1;
                 if (distance <= 0){
-                  Serial.write("S: -1\r\n");
+                  Serial.write("S1: -1;");
                 }
                 else {
-                  Serial.write("S: ");
+                  Serial.write("S1: ");
                   Serial.print(distance);
-                  Serial.write("\r\n");
+                  Serial.write(";");
                 }
                 delay(500);
           }
