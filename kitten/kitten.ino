@@ -42,6 +42,7 @@ void loop() {
 //                  Serial.print(distance);
 //                  Serial.write(";");
 //                }
+ Serial.write("kitten:;");
           }
       } else {
          buf[tail++] = val;
