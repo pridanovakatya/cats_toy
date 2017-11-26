@@ -22,10 +22,10 @@ void loop() {
       if(val == ';' || val == '\n') {
           buf[tail++] = 0;
           tail = 0;
-          for (int i = 0; buf[i]; i++) {
-            Serial.write(buf[i]);
-          }
           if (strcmp(buf, "distance\r\n")  == 0) {
+//              for (int i = 0; buf[i]; i++) {
+//                Serial.write(buf[i]);
+//              }
               long duration, distance;
                 digitalWrite(trigPin, LOW);  // Added this line
                 delayMicroseconds(2); // Added this line
@@ -35,15 +35,16 @@ void loop() {
 //                duration = pulseIn(echoPin, HIGH);
 //                distance = (duration/2) / 29.1;
 //                if (distance <= 0){
-//                  Serial.write("S: -1\r\n");
+//                  Serial.write("S1:-1;");
 //                }
 //                else {
-                  Serial.write("R: OK\r\n");
+//                  Serial.write("S1:");
+//                  Serial.print(distance);
+//                  Serial.write(";");
 //                }
-                delay(500);
           }
       } else {
          buf[tail++] = val;
       }
-  }  
+  }
 }
