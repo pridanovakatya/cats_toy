@@ -23,49 +23,27 @@ delay(1000);
 digitalWrite(8, HIGH);
 delay(1000);
 
-
-//  delay(500);
-//  while(Serial.available()){
-//    Serial.write(Serial.read());
-//  }
-//  Serial.print("AT+ROLE=1\r\n");
-//  delay(500);
-//  while(Serial.available()){
-//    Serial.write(Serial.read());
-//  }
-//  Serial.print("AT+INIT?\r\n");
-//  delay(500);
-
-//+LINK=abd8,89,563402
-//  delay(9000);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    if (s != '\r') {
-//    Serial.write(s);
-//    }
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-//
-//    Serial.print("AT+PAIR=AB53,86,3439DA,9\r\n");
-//    delay(9000);
+    Serial.print("AT+INIT\r\n");
+    delay(5000);
+//    Serial.print("AT+PAIR=AB53,86,3439DA,1\r\n");
+//    delay(1000);
 //    Serial.write("AT+BIND=AB53,86,3439DA\r\n");
-//    delay(2000);
-    Serial.write("AT+LINK=AB53,86,3439DA\r\n");
-    delay(1000);
+//    delay(1000);
+//    Serial.write("AT+LINK=AB53,86,3439DA\r\n");
+//    delay(1000);
 //    
 //    Serial.print("AT+PAIR=ABB0,89,563402,9\r\n");
 //    delay(9000);
-//    Serial.write("AT+BIND=ABB0,89,563402\r\n");
-//    delay(2000);
-    Serial.write("AT+LINK=ABB0,89,563402\r\n");
+    Serial.write("AT+BIND=ABD8,89,563402\r\n");
+    delay(1000);
+    Serial.write("AT+LINK=ABD8,89,563402\r\n");
     delay(1000);
 //    
 //    Serial.print("AT+PAIR=AB92,8E,563402,9\r\n");
 //    delay(9000);
 //    Serial.write("AT+BIND=AB92,8E,563402\r\n");
-//    delay(2000);
-    Serial.write("AT+LINK=AB92,8E,563402\r\n");
+//    delay(1000);
+//    Serial.write("AT+LINK=AB92,8E,563402\r\n");
     delay(1000);
 //
 
@@ -123,7 +101,7 @@ delay(1000);
 //  delay(500);
    
 
-  digitalWrite(8, LOW);
+//  digitalWrite(8, LOW);
 //  delay(1000);
 //  digitalWrite(9, LOW);
 //   delay(1000);
