@@ -1,20 +1,27 @@
-//#define trigPin 12
-#define echoPin 11
+#define echoPin 2
 
-char val; // variable to receive data from the serial port
 char buf[100];
 int tail;
+long distance = 0;
 
 void setup() {
   tail = 0;
   Serial.begin (9600);
-//  pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(echoPin), handlePulse, FALLING);
 }
 
-void loop() {
+void handlePulse() {
+  detachInterrupt(digitalPinToInterrupt(echoPin));
+  long duration;
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034;  
+  attachInterrupt(digitalPinToInterrupt(echoPin), handlePulse, FALLING);
+}
+
+void loop() {  
     if(Serial.available())  {  
-    val = Serial.read();
+    char val = Serial.read();
     if (val == ';') {
       buf[tail++] = '\r';
       buf[tail++] = '\n';
@@ -23,17 +30,6 @@ void loop() {
           buf[tail++] = 0;
           tail = 0;
           if (strcmp(buf, "distance\r\n")  == 0) {
-//              for (int i = 0; buf[i]; i++) {
-//                Serial.write(buf[i]);
-//              }
-              long duration, distance;
-              //  digitalWrite(trigPin, LOW);  // Added this line
-              //  delayMicroseconds(2); // Added this line
-              //  digitalWrite(trigPin, HIGH);
-              //  delayMicroseconds(10); // Added this line
-              //  digitalWrite(trigPin, LOW);
-                duration = pulseIn(echoPin, HIGH);
-                distance = (duration/2) / 29.1;
                 if (distance <= 0){
                   Serial.write("S1:-1;");
                 }
