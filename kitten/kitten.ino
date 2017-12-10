@@ -56,8 +56,20 @@ void showData() {
            digitalWrite(trigPin, LOW);
            unsigned long duration = pulseIn(echoPin, HIGH);
            distance = duration * 0.034; 
-           Serial.println(distance);
+           serialPrintLn("sync");
         }
         newData = false;
     }
+}
+
+void serialPrintLn(String s) {
+   if (Serial) {
+    Serial.println(s);
+  }
+}
+
+void serialPrintLn(float s) {
+   if (Serial) {
+    Serial.println(s, 6);
+  }
 }

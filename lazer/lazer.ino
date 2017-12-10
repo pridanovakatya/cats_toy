@@ -109,7 +109,8 @@ void getD1(float &d1) {
         if (ack[0] == 'd') {
           float d = stof(ack);
           if (d >= 400) {
-            serialPrintLn("d1: error");
+            serialPrintLn("d1_error:");
+            serialPrintLn(d);
           } else {
             d /= 100.0;
             d1 = d;
@@ -132,7 +133,8 @@ void getD2(float &d2) {
         if (ack[0] == 'd') {
           float d = stof(ack);
           if (d >= 400) {
-            serialPrintLn("d2: error");
+            serialPrintLn("d2_error:");
+            serialPrintLn(d);
           } else {
             d /= 100.0;
             d2 = d;
@@ -190,14 +192,23 @@ void calcAngles(float d1, float d2, Angles &angles, Point &p, Point &pPrev) {
   p.x = (d1 * d1 - d2 * d2) / 2;
   p.y = sqrt(abs(d1 * d1 - (p.x + 0.5) * (p.x + 0.5)));
   
-  if (abs(p.x - pPrev.x) >= 0.03 || abs(p.y - pPrev.y) >= 0.03) {   
+  if (abs(p.x - pPrev.x) >= 0.05 || abs(p.y - pPrev.y) >= 0.05) {   
     float dx = p.x - pPrev.x;
     float dy = p.y - pPrev.y;
 
     float x = p.x + (dx * 0.20) / sqrt(dx * dx + dy * dy);
-    float y = p.y + (dy * 0.20) / sqrt(dx * dx + dy * dy);
+    float y;
     
-    angles.alpha = round(atan(y) * 57.2958);
+    if (abs(x) > 0.5) {
+      x = getSign(x) * 0.5;
+      float dx1 = x - p.x;
+      float dy1 = getSign(dy) * sqrt(0.04 - dx1 * dx1);
+      y = p.y + dy1;
+    } else {
+      y = p.y + (dy * 0.20) / sqrt(dx * dx + dy * dy);
+    }
+    
+    angles.alpha = round(atan(y) * 57.2958) + 10;
     angles.betta = round(atan(x / sqrt(1 + y * y)) * 57.2958) + 90;
     
     if (angles.alpha > 90) {
@@ -205,8 +216,8 @@ void calcAngles(float d1, float d2, Angles &angles, Point &p, Point &pPrev) {
     } else if (angles.alpha < 0) {
       angles.alpha = 0;
     }
-    if (angles.betta > 180) {
-      angles.betta = 180;
+    if (angles.betta > 190) {
+      angles.betta = 190;
     } else if (angles.betta < 0) {
       angles.betta = 0;
     }
@@ -214,5 +225,11 @@ void calcAngles(float d1, float d2, Angles &angles, Point &p, Point &pPrev) {
     pPrev.x = p.x;
     pPrev.y = p.y;
   }
+}
+
+int getSign(float x) {
+  if (x > 0.0000001) return 1;
+  if (x < -0.0000001) return -1;
+  return 0;
 }
 
