@@ -7,6 +7,7 @@
 #include <RF24.h>
 #include <stdio.h>
 #include <math.h>
+#include <avr/wdt.h>
 
 #define SERVO_LOW 5
 #define SERVO_HIGH 6
@@ -24,8 +25,8 @@ float d1 = 0;
 float d2 = 0;
 
 struct Point {
-  float x = -1;
-  float y = -1;
+  float x = 0;
+  float y = 0;
 } p, pPrev;
 
 struct Angles {
@@ -49,6 +50,7 @@ unsigned long txIntervalMillis = 700; // send once per second
 char ack[13];
 
 void setup() {
+    wdt_enable(WDTO_4S);
     pinMode(DEBUG, INPUT);
     servoLow.attach(SERVO_LOW);
     servoHigh.attach(SERVO_HIGH);
@@ -73,15 +75,19 @@ void loop() {
       delay(10);
       getD2(d2);
       delay(10);
+      
       calcAngles(d1, d2, angles, p, pPrev);
+      
       servoLow.write(90 - angles.alpha);
       servoHigh.write(190 - angles.betta);
+      
       serialPrintLn("alpha:");
       serialPrintLn(angles.alpha);
       serialPrintLn("betta:");
       serialPrintLn(angles.betta);
       prevMillis = millis();
     }
+    wdt_reset();
 }
 
 void sync() {
@@ -183,17 +189,30 @@ void serialPrintLn(float s) {
 void calcAngles(float d1, float d2, Angles &angles, Point &p, Point &pPrev) {
   p.x = (d1 * d1 - d2 * d2) / 2;
   p.y = sqrt(abs(d1 * d1 - (p.x + 0.5) * (p.x + 0.5)));
-  angles.alpha = round(atan(p.y) * 57.2958);
-  if (angles.alpha > 90) {
-    angles.alpha = 90;
-  } else if (angles.alpha < 0) {
-    angles.alpha = 0;
-  }
-  angles.betta = round(atan(p.x / sqrt(1 + p.y * p.y)) * 57.2958) + 90;
-  if (angles.betta > 180) {
-    angles.betta = 180;
-  } else if (angles.betta < 0) {
-    angles.betta = 0;
+  
+  if (abs(p.x - pPrev.x) >= 0.03 || abs(p.y - pPrev.y) >= 0.03) {   
+    float dx = p.x - pPrev.x;
+    float dy = p.y - pPrev.y;
+
+    float x = p.x + (dx * 0.20) / sqrt(dx * dx + dy * dy);
+    float y = p.y + (dy * 0.20) / sqrt(dx * dx + dy * dy);
+    
+    angles.alpha = round(atan(y) * 57.2958);
+    angles.betta = round(atan(x / sqrt(1 + y * y)) * 57.2958) + 90;
+    
+    if (angles.alpha > 90) {
+      angles.alpha = 90;
+    } else if (angles.alpha < 0) {
+      angles.alpha = 0;
+    }
+    if (angles.betta > 180) {
+      angles.betta = 180;
+    } else if (angles.betta < 0) {
+      angles.betta = 0;
+    }
+
+    pPrev.x = p.x;
+    pPrev.y = p.y;
   }
 }
 
