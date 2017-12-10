@@ -23,8 +23,15 @@
 float d1 = 0;
 float d2 = 0;
 
-int alpha = 0;
-int betta = 0;
+struct Point {
+  float x = -1;
+  float y = -1;
+} p, pPrev;
+
+struct Angles {
+  int alpha = 0;
+  int betta = 0;
+} angles;
 
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
 
@@ -66,13 +73,13 @@ void loop() {
       delay(10);
       getD2(d2);
       delay(10);
-      calcAngles(d1, d2, alpha, betta);
-      servoLow.write(90 - alpha);
-      servoHigh.write(190 - betta);
+      calcAngles(d1, d2, angles, p, pPrev);
+      servoLow.write(90 - angles.alpha);
+      servoHigh.write(190 - angles.betta);
       serialPrintLn("alpha:");
-      serialPrintLn(alpha);
+      serialPrintLn(angles.alpha);
       serialPrintLn("betta:");
-      serialPrintLn(betta);
+      serialPrintLn(angles.betta);
       prevMillis = millis();
     }
 }
@@ -173,20 +180,20 @@ void serialPrintLn(float s) {
 }
 
 
-void calcAngles(float d1, float d2, int &alpha, int &betta) {
-  float x = (d1 * d1 - d2 * d2) / 2;
-  float y = sqrt(abs(d1 * d1 - (x + 0.5) * (x + 0.5)));
-  alpha = round(atan(y) * 57.2958);
-  if (alpha > 90) {
-    alpha = 90;
-  } else if (alpha < 0) {
-    alpha = 0;
+void calcAngles(float d1, float d2, Angles &angles, Point &p, Point &pPrev) {
+  p.x = (d1 * d1 - d2 * d2) / 2;
+  p.y = sqrt(abs(d1 * d1 - (p.x + 0.5) * (p.x + 0.5)));
+  angles.alpha = round(atan(p.y) * 57.2958);
+  if (angles.alpha > 90) {
+    angles.alpha = 90;
+  } else if (angles.alpha < 0) {
+    angles.alpha = 0;
   }
-  betta = round(atan(x / sqrt(1 + y * y)) * 57.2958) + 90;
-  if (betta > 180) {
-    betta = 180;
-  } else if (betta < 0) {
-    betta = 0;
+  angles.betta = round(atan(p.x / sqrt(1 + p.y * p.y)) * 57.2958) + 90;
+  if (angles.betta > 180) {
+    angles.betta = 180;
+  } else if (angles.betta < 0) {
+    angles.betta = 0;
   }
 }
 
