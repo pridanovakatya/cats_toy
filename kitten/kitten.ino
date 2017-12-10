@@ -47,9 +47,7 @@ void loop() {
 void showData() {
      if ( radio.available() ) {
         radio.read( &dataReceived, sizeof(dataReceived) );
-        newData = true;
-    }
-    if (newData == true) {
+
         if (strcmp(dataReceived, "sync;") == 0) {
            digitalWrite(trigPin, HIGH);
            delayMicroseconds(10);
@@ -58,8 +56,7 @@ void showData() {
            distance = duration * 0.034; 
            serialPrintLn("sync");
         }
-        newData = false;
-    }
+     }
 }
 
 void serialPrintLn(String s) {

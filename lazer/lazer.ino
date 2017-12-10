@@ -79,6 +79,7 @@ void loop() {
       calcAngles(d1, d2, angles, p, pPrev);
       
       servoLow.write(90 - angles.alpha);
+      delay(100);
       servoHigh.write(190 - angles.betta);
       
       serialPrintLn("alpha:");
