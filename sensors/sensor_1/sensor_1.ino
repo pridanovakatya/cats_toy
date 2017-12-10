@@ -1,6 +1,3 @@
-
-// SimpleRx - the slave or the receiver
-
 #define echoPin 3
 #define trigPin 2
 
@@ -13,13 +10,10 @@
 
 RF24 radio(CE_PIN, CSN_PIN);
 
-char dataReceived[10]; // this must match dataToSend in the TX
+char dataReceived[10];
 char ack[9];
-bool newData = false;
 
 double distance = 0;
-
-//===========
 
 void setup() {
     pinMode(trigPin, OUTPUT);
@@ -27,7 +21,7 @@ void setup() {
     digitalWrite(trigPin, LOW);
     Serial.begin(9600);
 
-    Serial.println("SimpleRx Starting");
+    serialPrintLn("SimpleRx Starting");
     radio.begin();
     delay(100);
     radio.enableAckPayload();
@@ -35,29 +29,44 @@ void setup() {
     radio.setDataRate(RF24_2MBPS);
     radio.setRetries(15, 15);
     radio.openReadingPipe(1, 0xF0F0F0F0AA);
+    radio.openReadingPipe(2, 0xF0F0F0F0BB);
     radio.startListening();
 }
-
-//=============
 
 void loop() {
     showData();
 }
 
 void showData() {
-     if ( radio.available() ) {
+     if (radio.available() ) {
         radio.read( &dataReceived, sizeof(dataReceived) );
-        newData = true;
-    }
-    if (newData == true) {
+
         if (strcmp(dataReceived, "sync;") == 0) {
            digitalWrite(trigPin, HIGH);
            delayMicroseconds(10);
            digitalWrite(trigPin, LOW);
            unsigned long duration = pulseIn(echoPin, HIGH);
            distance = duration * 0.034; 
-           Serial.println(distance);
+           serialPrintLn(distance);
+        } else if (strcmp(dataReceived, "distance;") == 0) {
+          dtostrf(distance, 8, 2, ack); // Leave room for too large numbers!
+          char str[13] = "d1:";
+          strcat(str, ack);
+          str[11] = 0;
+          serialPrintLn(str);
+          radio.writeAckPayload(2, &str, sizeof(str));
         }
-        newData = false;
     }
+}
+
+void serialPrintLn(String s) {
+   if (Serial) {
+    Serial.println(s);
+  }
+}
+
+void serialPrintLn(float s) {
+   if (Serial) {
+    Serial.println(s, 6);
+  }
 }

@@ -1,141 +1,192 @@
-#include <Servo.h>
-char val; // variable to receive data from the serial port
-char buf[200];
-int tail;
 
-int pos = 0;    // variable to store the servo position
-Servo myservo2;
-Servo myservo1;
+// SimpleTx - the master or the transmitter
+
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <Servo.h> 
+#include <RF24.h>
+#include <stdio.h>
+#include <math.h>
+
+#define SERVO_LOW 5
+#define SERVO_HIGH 6
+
+#define CE_PIN   9
+#define CSN_PIN 10
+
+#define D1_PIPE 0xF0F0F0F0BB
+#define D2_PIPE 0xF0F0F0F0CC
+#define SYNC_PIPE 0xF0F0F0F0AA
+
+#define DEBUG 0
+
+float d1 = 0;
+float d2 = 0;
+
+int alpha = 0;
+int betta = 0;
+
+RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
+
+Servo servoLow;
+Servo servoHigh;
+
+char syncCmd[10] = "sync;\0";
+char dCmd[10] = "distance;\0";
+
+unsigned long currentMillis;
+unsigned long prevMillis;
+unsigned long txIntervalMillis = 700; // send once per second
+
+
+char ack[13];
 
 void setup() {
-  tail = 0;
-  Serial.begin(9600);
-  while (!Serial);
-  delay(500);  
+    pinMode(DEBUG, INPUT);
+    servoLow.attach(SERVO_LOW);
+    servoHigh.attach(SERVO_HIGH);
+    Serial.begin(9600);
 
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
-  digitalWrite(9, LOW);
-  digitalWrite(8, LOW);
+    serialPrintLn("SimpleTx Starting");
 
-  delay(500);
- digitalWrite(9, HIGH);
-delay(700);
-digitalWrite(8, HIGH);
-delay(700);
-    Serial.print("AT+INIT\r\n");
-    delay(500);
-//    Serial.print("AT+PAIR=AB53,86,3439DA,1\r\n");
-//    delay(1000);
-//    Serial.write("AT+BIND=AB53,86,3439DA\r\n");
-//    delay(1000);
-//    Serial.write("AT+LINK=AB53,86,3439DA\r\n");
-//    delay(1000);
-//    
-//    Serial.print("AT+PAIR=ABB0,89,563402,9\r\n");
-//    delay(9000);
-//    Serial.write("AT+BIND=ABD8,89,563402\r\n");
-//    delay(1000);
-    Serial.write("AT+LINK=AB53,86,3439DA\r\n");
-    delay(2500);
-//    
-//    Serial.print("AT+PAIR=AB92,8E,563402,9\r\n");
-//    delay(9000);
-//    Serial.write("AT+BIND=AB92,8E,563402\r\n");
-//    delay(1000);
-//    Serial.write("AT+LINK=AB92,8E,563402\r\n");
-//
+    radio.begin();
+    delay(100);
+    radio.enableAckPayload();
+    radio.enableDynamicPayloads();
+    radio.setDataRate(RF24_2MBPS);
+    radio.setRetries(15, 15);
+}
 
-//  while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  digitalWrite(8, LOW);
-//    Serial.write("AT+PAIR=ABB0,89,563402,9\r\n");
-//  delay(9000);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-//    Serial.print("AT+BIND=AB92,8E,56,3402\r\n");
-//  delay(9000);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-
-  delay(500);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-//
-//      Serial.print("AT+LINK=ABB0,89,563402\r\n");
-//  delay(500);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-//  digitalWrite(9, LOW);
-//  delay(500);
-//  digitalWrite(8, LOW);
-//  delay(500);
-//  digitalWrite(9, HIGH);
-//  Serial.print("AT+LINK=ABB0,89,563402\r\n");
-//  delay(500);
-//    while(Serial.available()){
-//    char s = Serial.read();
-//    Serial.write(s);
-//  }
-//  Serial.write("\r\n");
-//  delay(500);
-   
-
-//  digitalWrite(8, LOW);
-//  delay(1000);
-//  digitalWrite(9, LOW);
-//   delay(1000);
-//    digitalWrite(9, HIGH);
-
-
-  myservo1.attach(6); 
-  myservo2.attach(7); 
- }
-
-void loop() {      
-  if(Serial.available())  {  
-    val = Serial.read();
-    if (val == ';') {
-      buf[tail++] = '\r';
-      buf[tail++] = '\n';
+void loop() {
+    currentMillis = millis();
+    if (currentMillis - prevMillis >= txIntervalMillis) {
+      sync();     
+      delay(10); 
+      getD1(d1);
+      delay(10);
+      getD2(d2);
+      delay(10);
+      calcAngles(d1, d2, alpha, betta);
+      servoLow.write(90 - alpha);
+      servoHigh.write(190 - betta);
+      serialPrintLn("alpha:");
+      serialPrintLn(alpha);
+      serialPrintLn("betta:");
+      serialPrintLn(betta);
+      prevMillis = millis();
     }
-      if(val == ';' || val == '\n') {
-          buf[tail++] = 0;
-          tail = 0;
-          if (strncmp("ERROR", buf, 5 != 0)) {
-          for (int i = 0; buf[i]; i++) {
-            Serial.print(buf[i]);
-          }
-          if (strcmp(buf, "test\r\n")  == 0) {
-            Serial.print("tested\r\n");
-          }
-        }
-      } else {
-         buf[tail++] = val;
+}
+
+void sync() {
+    radio.openWritingPipe(SYNC_PIPE);
+    if (radio.write( &syncCmd, sizeof(syncCmd) )) {
+      serialPrintLn("Synced");
       }
-  } else {
-    Serial.write("distance;"); 
-    delay(400);
+     else {
+      serialPrintLn("SYNC FAILED");
+    }
+}
+
+void getD1(float &d1) {
+  radio.openWritingPipe(D1_PIPE);
+    if (radio.write( dCmd, sizeof(dCmd) )) {
+      if (radio.isAckPayloadAvailable()) {
+        while (!radio.available()); 
+        radio.read(&ack, sizeof(ack));
+        if (ack[0] == 'd') {
+          float d = stof(ack);
+          if (d >= 400) {
+            serialPrintLn("d1: error");
+          } else {
+            d /= 100.0;
+            d1 = d;
+          }
+          serialPrintLn("d1:");
+          serialPrintLn(d1);
+        }
+      }
+    } else {
+      Serial.println("D1 FAILED");
+    }
+}
+
+void getD2(float &d2) {
+    radio.openWritingPipe(D2_PIPE);
+    if (radio.write( dCmd, sizeof(dCmd) )) {
+      if (radio.isAckPayloadAvailable()) {
+        while (!radio.available()); 
+        radio.read(&ack, sizeof(ack));
+        if (ack[0] == 'd') {
+          float d = stof(ack);
+          if (d >= 400) {
+            serialPrintLn("d2: error");
+          } else {
+            d /= 100.0;
+            d2 = d;
+          }
+          serialPrintLn("d2:");
+          serialPrintLn(d2);
+        }
+      }
+    } else {
+      serialPrintLn("D2 FAILED");
+    }
+}
+
+float stof(const char* s){
+  if (s[0] == 'd') {
+    s += 2;
+  }
+  float rez = 0, fact = 1;
+  if (*s == '-'){
+    s++;
+    fact = -1;
+  };
+  for (int point_seen = 0; *s; s++){
+    if (*s == '.'){
+      point_seen = 1; 
+      continue;
+    };
+    int d = *s - '0';
+    if (d >= 0 && d <= 9){
+      if (point_seen) fact /= 10.0f;
+      rez = rez * 10.0f + (float)d;
+    };
+  };
+  return rez * fact;
+};
+
+bool isDebug() {
+  return digitalRead(DEBUG) == HIGH;
+}
+
+void serialPrintLn(String s) {
+   if (Serial) {
+    Serial.println(s);
   }
 }
 
+void serialPrintLn(float s) {
+   if (Serial) {
+    Serial.println(s, 6);
+  }
+}
+
+
+void calcAngles(float d1, float d2, int &alpha, int &betta) {
+  float x = (d1 * d1 - d2 * d2) / 2;
+  float y = sqrt(abs(d1 * d1 - (x + 0.5) * (x + 0.5)));
+  alpha = round(atan(y) * 57.2958);
+  if (alpha > 90) {
+    alpha = 90;
+  } else if (alpha < 0) {
+    alpha = 0;
+  }
+  betta = round(atan(x / sqrt(1 + y * y)) * 57.2958) + 90;
+  if (betta > 180) {
+    betta = 180;
+  } else if (betta < 0) {
+    betta = 0;
+  }
+}
 
